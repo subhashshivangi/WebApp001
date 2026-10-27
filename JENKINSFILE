@@ -1,0 +1,54 @@
+pipeline {
+
+    agent any
+
+    tools {
+        maven 'Maven-3.9'
+    }
+
+    environment {
+        TOMCAT_URL = 'http://3.26.66.101:9090/'
+        APP_NAME = 'maven-web-app'
+    }
+
+    stages {
+
+        stage('Get Code') {
+            steps {
+                git 'https://github.com/subhashshivangi/WebApp001.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'tomcat-credentials',
+                        usernameVariable: 'admin',
+                        passwordVariable: 'Admin@123'
+                    )
+                ]) {
+
+                    sh '''
+                        curl --fail --upload-file target/maven-web-app.war \
+                        -u "$TOMCAT_USER:$TOMCAT_PASSWORD" \
+                        "$TOMCAT_URL/manager/text/deploy?path=/$WebApp001&update=true"
+                    '''
+                }
+            }
+        }
+    }
+}
